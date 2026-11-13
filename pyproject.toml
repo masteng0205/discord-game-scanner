@@ -1,0 +1,22 @@
+[project]
+name = "discord-game-scanner"
+version = "0.1.0"
+description = "Find installed PC games that Discord can detect — helps level up the Discord 'Game Variety' profile badge."
+readme = "README.md"
+authors = [{ name = "masteng0205" }]
+license = "MIT"
+requires-python = ">=3.13"
+dependencies = []
+keywords = ["discord", "badge", "steam", "epic-games", "game-detection"]
+classifiers = [
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3",
+    "Environment :: Console",
+]
+
+[project.scripts]
+discord-game-scanner = "discord_game_scanner.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.13.8,<0.14.0"]
+build-backend = "uv_build"
