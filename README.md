@@ -38,7 +38,7 @@ The optional HTML report has one-click **Install** links that open Steam.
   (`discord.com/api/v9/applications/detectable`) and your local Steam/Epic library files.
 - It **never** touches Discord's own data folder (which contains your login token) and
   **never asks for a Discord token or password**. Any tool that does is a scam.
-- No third-party dependencies: Python standard library only. The source is ~600 lines in
+- No third-party dependencies: Python standard library only. The source is ~800 lines in
   [`src/`](src/discord_game_scanner) — feel free to read it.
 - The optional Steam Web API key is only read from an environment variable; it is never
   printed, logged or saved, and errors are sanitised so it cannot leak.
