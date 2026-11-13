@@ -19,7 +19,7 @@ from .scanner import ScanResult, scan
 from .steam_api import OwnedGame, SteamApiError, get_owned_games, normalize_name
 
 NEVER = "NEVER PLAYED -> surely not counted"
-MAYBE = "maybe not counted yet"
+MAYBE = "played on Steam - unknown on Discord"
 
 
 def _fmt_date(ts: int | None) -> str:
@@ -31,11 +31,11 @@ def _status(r: ScanResult) -> str:
         return "not detectable"
     if r.game.store == "steam" and not r.game.last_played:
         return "NEVER PLAYED -> candidate"
-    return "played before" if r.game.last_played else "unknown (not Steam)"
+    return "played on Steam - unknown on Discord" if r.game.last_played else "unknown (not Steam)"
 
 
 def _sort_key(r: ScanResult):
-    order = {"NEVER PLAYED -> candidate": 0, "unknown (not Steam)": 1, "played before": 2, "not detectable": 3}
+    order = {"NEVER PLAYED -> candidate": 0, "unknown (not Steam)": 1, "played on Steam - unknown on Discord": 2, "not detectable": 3}
     return (order[_status(r)], r.game.name.lower())
 
 

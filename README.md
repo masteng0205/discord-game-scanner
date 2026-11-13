@@ -65,9 +65,14 @@ uv run discord-game-scanner --owned --exclude-file exclude.txt
 
 ## Limitations
 
-- "Never played" comes from Steam playtime: a game with 0 minutes is certainly not counted
-  yet. A game played before may or may not be counted (e.g. played while Discord was closed
-  or before Discord started tracking).
+- Status labels come from Steam playtime, because Discord does not expose which games it
+  already counted:
+  - **NEVER PLAYED** — 0 minutes on Steam, so Discord cannot have counted it yet.
+  - **played on Steam - unknown on Discord** — Steam saw you play it, but Discord only counts
+    a game if the Discord desktop app was running and detected it at the time. It may be
+    missing if Discord was closed, activity detection was off, you played on another device,
+    it was before Discord started tracking, or the game was not yet on Discord's list.
+    Playing it again for a few minutes with Discord open makes sure it counts.
 - Only Steam and Epic libraries are scanned for installed games.
 - Discord's detection list and badge rules can change at any time.
 
