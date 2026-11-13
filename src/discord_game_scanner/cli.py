@@ -116,16 +116,54 @@ def _hint(g: OwnedGame) -> str:
     return NEVER if g.playtime_min == 0 else MAYBE
 
 
-def print_owned(rows: list[tuple[OwnedGame, dict]], total_owned: int, source: str) -> None:
+def _fmt_playtime(minutes: int) -> str:
+    if minutes == 0:
+        return "0"
+    if minutes < 6:  # would round to 0.0 h and look like "never played"
+        return "<0.1 h"
+    return f"{minutes / 60:.1f} h"
+
+
+def _print_section(title: str, rows: list[tuple[OwnedGame, dict]], limit: int, note: str = "") -> None:
+    print(f"\n▶ {title} ({len(rows)})" + (f" — {note}" if note else ""))
+    if not rows:
+        print("  (none)")
+        return
+    shown = rows if limit <= 0 else rows[:limit]
+    table = [("Game", "Playtime", "Last played")]
+    table += [(g.name, _fmt_playtime(g.playtime_min), _fmt_date(g.last_played)) for g, _ in shown]
+    _print_rows(table)
+    if len(shown) < len(rows):
+        print(f"  ... and {len(rows) - len(shown)} more (use --limit 0 to show all, or open the HTML report)")
+
+
+def print_owned(rows: list[tuple[OwnedGame, dict]], total_owned: int, source: str,
+                limit: int = 15, never_only: bool = False) -> list[OwnedGame]:
+    """Print owned-but-not-installed games in two sections; return the never-played ones."""
+    never = [(g, a) for g, a in rows if g.playtime_min == 0]
+    played = [(g, a) for g, a in rows if g.playtime_min > 0]
     print(f"\n=== Owned on Steam, NOT installed, detectable by Discord ({len(rows)} of {total_owned} owned) ===")
     print(f"Source: {source}")
-    table = [("Game", "Playtime", "Last played", "Hint")]
-    for g, _ in rows:
-        table.append((g.name, f"{g.playtime_min / 60:.1f} h" if g.playtime_min else "0",
-                      _fmt_date(g.last_played), _hint(g)))
-    _print_rows(table)
-    never = sum(1 for g, _ in rows if g.playtime_min == 0)
-    print(f"\nNever played: {never}. Install and play any of them with Discord open to grow the badge.")
+    _print_section("NEVER PLAYED — certainly not counted by Discord yet", never, limit)
+    if not never_only:
+        _print_section("Played on Steam — unknown on Discord", played, limit,
+                       note="oldest first; older games are more likely to be missing")
+    return [g for g, _ in never]
+
+
+def print_next_steps(never: list[OwnedGame], html_path: Path | None, show: int = 10) -> None:
+    print("\n=== Next step ===")
+    if never:
+        names = ", ".join(g.name for g in never[:show])
+        more = f" (+{len(never) - show} more)" if len(never) > show else ""
+        print(f"{len(never)} games you own were never played: {names}{more}.")
+        print("Install any of them and play a few minutes with Discord open to grow the badge.")
+    else:
+        print("No never-played games left; replay older games with Discord open.")
+    if html_path:
+        print(f"Install links: open {html_path.resolve()}")
+    else:
+        print("Tip: add --html report.html for a report with one-click Steam install links.")
 
 
 # ------------------------------------------------------------ reports
@@ -144,7 +182,7 @@ def write_html(results: list[ScanResult], owned_rows: list[tuple[OwnedGame, dict
     if owned_rows is not None:
         body = "".join(
             f"<tr class='{'cand' if g.playtime_min == 0 else ''}'><td>{e(g.name)}</td>"
-            f"<td>{g.playtime_min / 60:.1f} h</td><td>{_fmt_date(g.last_played)}</td><td>{e(_hint(g))}</td>"
+            f"<td>{e(_fmt_playtime(g.playtime_min))}</td><td>{_fmt_date(g.last_played)}</td><td>{e(_hint(g))}</td>"
             f"<td><a href='steam://install/{e(g.appid)}'>install</a></td></tr>"
             for g, _ in owned_rows
         )
@@ -204,8 +242,15 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--exclude-file", type=Path, metavar="FILE",
                    help="text file with game names already counted by Discord (one per line, "
                         "e.g. copied from Settings > Registered Games); they are hidden")
+    p.add_argument("--never-only", action="store_true",
+                   help="with --owned: only show games you have never played (best badge candidates)")
+    p.add_argument("--limit", type=int, default=15, metavar="N",
+                   help="max rows per owned-games section in the terminal (default 15, 0 = all); "
+                        "reports always contain everything")
     p.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     args = p.parse_args(argv)
+    if args.never_only:
+        args.owned = True
 
     print("Loading Discord's detectable application list...")
     index = DetectableIndex.build(load_detectable(refresh=args.refresh))
@@ -235,14 +280,16 @@ def main(argv: list[str] | None = None) -> int:
             return 2
         installed_ids = {r.game.store_id for r in results if r.game.store == "steam"}
         owned_rows = owned_candidates(owned, index, installed_ids, _load_excludes(args.exclude_file))
-        print_owned(owned_rows, len(owned), source)
+        never = print_owned(owned_rows, len(owned), source, limit=args.limit, never_only=args.never_only)
 
     if args.html:
         write_html(results, owned_rows, args.html)
-        print(f"HTML report: {args.html.resolve()}")
+        print(f"\nHTML report: {args.html.resolve()}")
     if args.json:
         write_json(results, owned_rows, args.json)
         print(f"JSON report: {args.json.resolve()}")
+    if owned_rows is not None:
+        print_next_steps(never, args.html)  # last, so it is what the user sees first
     return 0
 
 

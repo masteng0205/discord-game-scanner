@@ -49,6 +49,13 @@ uv run discord-game-scanner --html report.html  # + HTML report
    ```powershell
    uv run discord-game-scanner --owned --steamid 7656119XXXXXXXXXX --html report.html
    ```
+   The terminal shows two sections — **NEVER PLAYED** (best candidates) and **Played on
+   Steam — unknown on Discord** — limited to 15 rows each, followed by a short *Next step*
+   summary. Useful options:
+   ```powershell
+   uv run discord-game-scanner --never-only            # only never-played games
+   uv run discord-game-scanner --owned --limit 0       # show every row
+   ```
 4. **Revoke the key** afterwards on the same Steam page. The game list is cached locally
    (`%LOCALAPPDATA%\discord-game-scanner`), so later runs with `--owned` work without a key.
 

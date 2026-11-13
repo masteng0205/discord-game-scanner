@@ -101,6 +101,33 @@ class OwnedTests(unittest.TestCase):
             with self.assertRaises(SteamApiError):
                 cli.load_owned("76561198000000000")
 
+    def test_fmt_playtime(self):
+        from discord_game_scanner.cli import _fmt_playtime
+        self.assertEqual(_fmt_playtime(0), "0")
+        self.assertEqual(_fmt_playtime(2), "<0.1 h")
+        self.assertEqual(_fmt_playtime(90), "1.5 h")
+
+    def test_print_owned_sections_limit_and_never_only(self):
+        import io
+        from contextlib import redirect_stdout
+        from discord_game_scanner.cli import print_owned
+        from discord_game_scanner.steam_api import OwnedGame
+        rows = [(OwnedGame(str(i), f"Never{i}", 0, None), {}) for i in range(3)] + \
+               [(OwnedGame(str(10 + i), f"Played{i}", 60, 1_600_000_000), {}) for i in range(3)]
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            never = print_owned(rows, 6, "test", limit=2)
+        out = buf.getvalue()
+        self.assertEqual([g.name for g in never], ["Never0", "Never1", "Never2"])
+        self.assertIn("NEVER PLAYED", out)
+        self.assertIn("Played on Steam", out)
+        self.assertNotIn("Never2", out)            # cut by limit=2
+        self.assertIn("and 1 more", out)
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            print_owned(rows, 6, "test", limit=0, never_only=True)
+        self.assertNotIn("Played0", buf.getvalue())
+
     def test_api_error_falls_back_to_cache(self):
         import json, os
         from unittest import mock
