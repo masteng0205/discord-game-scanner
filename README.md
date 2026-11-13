@@ -5,7 +5,22 @@ Find PC games that **Discord can detect**, to level up the Discord profile badge
 Voyager → Maverick → …). The badge counts how many *different detectable PC games* you have
 played **while the Discord desktop app was running**.
 
-The scanner shows:
+## Why this tool exists
+
+Discord shows a single number on the badge — for example *"42 games played, 18 more to the
+next level"* — but **never tells you which games those are**. If your Steam library has
+hundreds of titles, you are left guessing:
+
+- Which games in my library would Discord actually recognise?
+- Which ones have I **never played**, so they would certainly add to the badge?
+- Which ones **did I play, but maybe while Discord was closed**, so they never got recorded?
+
+`discord-game-scanner` answers those questions by comparing **your Steam library and play
+history** with **Discord's own list of detectable games**. It turns an invisible counter into
+a concrete to-do list: the games that can still grow your badge, starting with the ones that
+are guaranteed to count.
+
+## What it shows
 
 1. **Installed games** (Steam + Epic) and whether Discord recognises them.
 2. **Games you own on Steam but have not installed** that Discord recognises, with
