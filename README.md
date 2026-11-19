@@ -86,6 +86,24 @@ Open the report with `start report.html`.
 > ```
 > The examples below use `dgs`; replace it with the full `uvx ...` command if you skipped this.
 
+## Quick start (macOS)
+
+Only **Steam** is scanned on macOS (Epic is Windows-only here).
+
+```bash
+brew install uv        # once; or see https://docs.astral.sh/uv/
+uvx --from https://github.com/masteng0205/discord-game-scanner/archive/refs/heads/main.zip discord-game-scanner --html report.html
+open report.html
+```
+
+Installed games are read from `~/Library/Application Support/Steam`, and Discord's *macOS*
+executable patterns are used (binaries inside `.app` bundles). The `--owned` steps below work the
+same; use `export STEAM_API_KEY=...` (or `read -s STEAM_API_KEY; export STEAM_API_KEY`) instead of
+the PowerShell lines, and `export STEAM_ID=7656119...` to save your SteamID. The cache lives in
+`~/Library/Caches/discord-game-scanner`.
+
+> Windows games run through Wine/CrossOver/Whisky are generally not detected by Discord on macOS.
+
 ## See games you own but have not installed (Steam)
 
 This needs a free Steam Web API key **once**; afterwards the list is cached on your PC.
@@ -165,7 +183,7 @@ status shows **"Playing …"** while the game is open. The badge may take a whil
 
 ## Limitations
 
-- Windows only for installed-game detection (Steam + Epic). The `--owned` list works anywhere.
+- Installed-game detection: Steam + Epic on Windows, Steam only on macOS. The `--owned` list works anywhere.
 - Discord's detection list and badge rules can change at any time.
 
 ## Development

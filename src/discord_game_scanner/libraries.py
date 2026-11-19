@@ -49,7 +49,11 @@ def steam_root() -> Path | None:
                             pass
             except OSError:
                 pass
-    for guess in (Path(r"C:\Program Files (x86)\Steam"), Path.home() / ".steam/steam"):
+    for guess in (
+        Path.home() / "Library/Application Support/Steam",  # macOS
+        Path(r"C:\Program Files (x86)\Steam"),
+        Path.home() / ".steam/steam",
+    ):
         if guess.exists():
             return guess
     return None

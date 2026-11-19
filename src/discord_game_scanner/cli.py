@@ -13,7 +13,7 @@ from datetime import datetime
 from pathlib import Path
 
 from . import __version__
-from .detectable import DetectableIndex, cache_dir, load_detectable
+from .detectable import DetectableIndex, cache_dir, host_exe_os, load_detectable
 from .libraries import all_games
 from .scanner import ScanResult, scan
 from .steam_api import OwnedGame, SteamApiError, get_owned_games, normalize_name
@@ -253,11 +253,12 @@ def main(argv: list[str] | None = None) -> int:
         args.owned = True
 
     print("Loading Discord's detectable application list...")
-    index = DetectableIndex.build(load_detectable(refresh=args.refresh))
+    exe_os = host_exe_os()
+    index = DetectableIndex.build(load_detectable(refresh=args.refresh), exe_os=exe_os)
     games = all_games()
     print(f"{index.total:,} detectable apps known to Discord; {len(games)} installed games found.\n")
 
-    results = scan(games, index)
+    results = scan(games, index, exe_os)
     if results:
         print_installed(results)
         det = [r for r in results if r.detectable]
