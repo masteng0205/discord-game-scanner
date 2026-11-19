@@ -70,6 +70,62 @@ class ScanTests(unittest.TestCase):
         self.assertFalse(scan_game(game, DetectableIndex.build(APPS)).detectable)
 
 
+class MacTests(unittest.TestCase):
+    def test_darwin_patterns_indexed_only_for_darwin(self):
+        idx = DetectableIndex.build(APPS, exe_os="darwin")
+        self.assertIn("hl2_osx", idx.by_exe_name)
+        self.assertNotIn("wow.exe", idx.by_exe_name)
+
+    def test_app_bundle_binary_found_on_disk(self):
+        apps = [{"id": "7", "name": "Mac Game",
+                 "executables": [{"os": "darwin", "name": "macgame.app/contents/macos/macgame"}]}]
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp, "Mac Game")
+            macos = root / "MacGame.app" / "Contents" / "MacOS"
+            macos.mkdir(parents=True)
+            binary = macos / "MacGame"
+            binary.write_bytes(b"")
+            binary.chmod(0o755)
+            (macos / "libfoo.dylib").write_bytes(b"")
+            game = InstalledGame("steam", "0", "Mac Game", root)
+            idx = DetectableIndex.build(apps, exe_os="darwin")
+            r = scan_game(game, idx, exe_os="darwin")
+            self.assertEqual((r.method, r.discord_app["id"]), ("exe", "7"))
+            # Windows rules must not match a macOS tree
+            self.assertFalse(scan_game(game, DetectableIndex.build(apps)).detectable)
+
+    def test_app_bundle_name_pattern(self):
+        apps = [{"id": "6", "name": "Bundle Game",
+                 "executables": [{"os": "darwin", "name": "hearthstone.app"}]}]
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp, "Hearthstone")
+            (root / "Hearthstone.app" / "Contents").mkdir(parents=True)
+            game = InstalledGame("steam", "0", "H", root)
+            r = scan_game(game, DetectableIndex.build(apps, exe_os="darwin"), exe_os="darwin")
+            self.assertEqual((r.method, r.discord_app["id"]), ("exe", "6"))
+
+    def test_non_executable_file_ignored_on_darwin(self):
+        apps = [{"id": "8", "name": "X", "executables": [{"os": "darwin", "name": "hl2_osx"}]}]
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp, "X")
+            root.mkdir()
+            (root / "hl2_osx").write_bytes(b"")
+            (root / "hl2_osx").chmod(0o644)
+            game = InstalledGame("steam", "0", "X", root)
+            r = scan_game(game, DetectableIndex.build(apps, exe_os="darwin"), exe_os="darwin")
+            self.assertFalse(r.detectable)
+
+    def test_steam_root_macos_path(self):
+        from unittest import mock
+        from discord_game_scanner import libraries
+        with tempfile.TemporaryDirectory() as tmp:
+            steam = Path(tmp, "Library/Application Support/Steam")
+            steam.mkdir(parents=True)
+            with mock.patch.object(Path, "home", return_value=Path(tmp)), \
+                    mock.patch.object(libraries.os, "name", "posix"):
+                self.assertEqual(libraries.steam_root(), steam)
+
+
 class OwnedTests(unittest.TestCase):
     def test_normalize_name(self):
         from discord_game_scanner.steam_api import normalize_name
